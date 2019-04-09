@@ -2,4 +2,4 @@
 
 ## Architecture schema
 
-![schema](terraDB.png)
+![schema](terraDB.svg)
