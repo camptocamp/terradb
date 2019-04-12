@@ -18,5 +18,5 @@ require (
 	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6 // indirect
 	golang.org/x/sys v0.0.0-20190410170021-cc4d4f50624c // indirect
 	golang.org/x/tools v0.0.0-20190410211219-2538eef75904 // indirect
-	labix.org/v2/mgo v0.0.0-20140701140051-000000000287
+	labix.org/v2/mgo v0.0.0-20140701140051-000000000287 // indirect
 )
