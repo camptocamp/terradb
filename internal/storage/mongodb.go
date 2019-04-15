@@ -142,7 +142,11 @@ func (st *MongoDBStorage) GetState(name string, version int) (document interface
 			"state.serial": version,
 		},
 	}).Decode(&data)
-	if err != nil {
+
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	} else if err != nil {
+		err = fmt.Errorf("failed to decode state: %v", err)
 		return
 	}
 

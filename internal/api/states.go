@@ -58,6 +58,11 @@ func (s *server) GetState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if document == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	data, err := json.Marshal(document)
 	if err != nil {
 		log.Errorf("failed to marshal state: %s", err)
