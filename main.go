@@ -12,7 +12,7 @@ import (
 )
 
 var opts struct {
-	Version bool `short:"v" long:"version" description:"Display version."`
+	Version bool `short:"V" long:"version" description:"Display version."`
 	MongoDB struct {
 		URL      string `long:"mongodb-url" description:"MongoDB URL" env:"MONGODB_URL"`
 		Username string `long:"mongodb-username" description:"MongoDB Username" env:"MONGODB_USERNAME"`
