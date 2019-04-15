@@ -25,7 +25,7 @@ type MongoDBStorage struct {
 	client *mongo.Client
 }
 
-type Document struct {
+type document struct {
 	Timestamp string
 	Source    string
 	State     interface{}
@@ -154,13 +154,13 @@ func (st *MongoDBStorage) GetState(name string, version int) (document interface
 }
 
 // InsertState adds a Terraform state to the database.
-func (st *MongoDBStorage) InsertState(document interface{}, timestamp, source, name string) (err error) {
+func (st *MongoDBStorage) InsertState(doc interface{}, timestamp, source, name string) (err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
-	v, ok := document.(map[string]interface{})
+	v, ok := doc.(map[string]interface{})
 	if !ok {
-		err = fmt.Errorf("failed to unmarshal document.")
+		err = fmt.Errorf("failed to unmarshal document")
 		return
 	}
 
@@ -171,15 +171,15 @@ func (st *MongoDBStorage) InsertState(document interface{}, timestamp, source, n
 
 	var query interface{}
 	json.Unmarshal([]byte(fmt.Sprintf(`{
-		"state.serial": "%s",
+		"state.serial": "%v",
 		"name": "%s"
 	}`, serial, name)), &query)
 
-	data := &Document{
+	data := &document{
 		Timestamp: timestamp,
 		Source:    source,
 		Name:      name,
-		State:     document,
+		State:     doc,
 	}
 
 	upsert := true
