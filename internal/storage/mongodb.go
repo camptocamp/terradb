@@ -128,18 +128,24 @@ func (st *MongoDBStorage) RemoveState(name string) (err error) {
 	return
 }
 
-// GetState retrieve the latest version of a Terraform state.
-func (st *MongoDBStorage) GetState(name string, version int) (document interface{}, err error) {
+// GetState retrieves a Terraform state, at a given serial.
+// If serial is 0, it gets the latest serial
+func (st *MongoDBStorage) GetState(name string, serial int) (document interface{}, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
 	var data map[string]interface{}
-
-	err = collection.FindOne(ctx, map[string]interface{}{
+	filter := map[string]interface{}{
 		"name": name,
-	}, &options.FindOneOptions{
+	}
+
+	if serial != 0 {
+		filter["state.serial"] = serial
+	}
+
+	err = collection.FindOne(ctx, filter, &options.FindOneOptions{
 		Sort: map[string]interface{}{
-			"state.serial": version,
+			"state.serial": -1,
 		},
 	}).Decode(&data)
 

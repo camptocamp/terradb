@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -50,7 +51,19 @@ func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
 func (s *server) GetState(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	document, err := s.st.GetState(params["name"], -1)
+	var serial int
+	if v := r.URL.Query().Get("serial"); v != "" {
+		var err error
+		serial, err = strconv.Atoi(v)
+		if err != nil {
+			log.Errorf("failed to parse serial: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+			return
+		}
+	}
+
+	document, err := s.st.GetState(params["name"], serial)
 	if err != nil {
 		log.Errorf("failed to retrieve latest state: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
