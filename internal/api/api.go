@@ -10,6 +10,7 @@ import (
 	"github.com/camptocamp/terradb/internal/storage"
 )
 
+// API defines an API struct
 type API struct {
 	Address  string
 	Port     string
@@ -21,6 +22,7 @@ type server struct {
 	st storage.Storage
 }
 
+// StartServer starts the API server
 func StartServer(cfg *API, st storage.Storage) {
 	s := server{
 		st: st,

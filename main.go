@@ -24,6 +24,7 @@ var opts struct {
 	} `group:"API server options"`
 }
 
+// VERSION is TerraDB's version number
 var VERSION = "undefined"
 
 func main() {
