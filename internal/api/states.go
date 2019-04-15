@@ -123,12 +123,12 @@ func (s *server) LockState(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusLocked)
 			w.Write(d)
 			return
-		} else {
-			d, _ := json.Marshal(remoteLock)
-			w.WriteHeader(http.StatusConflict)
-			w.Write(d)
-			return
 		}
+
+		d, _ := json.Marshal(remoteLock)
+		w.WriteHeader(http.StatusConflict)
+		w.Write(d)
+		return
 	}
 
 	err = s.st.LockState(params["name"], currentLock)
