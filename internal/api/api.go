@@ -31,6 +31,7 @@ func StartServer(cfg *API, st storage.Storage) {
 	router := mux.NewRouter().StrictSlash(true)
 
 	apiRtr := router.PathPrefix("/v1/states").Subrouter()
+	apiRtr.HandleFunc("/", s.ListStates).Methods("GET")
 	apiRtr.HandleFunc("/{name}", s.InsertState).Methods("POST")
 	apiRtr.HandleFunc("/{name}", s.GetState).Methods("GET")
 	apiRtr.HandleFunc("/{name}", s.RemoveState).Methods("DELETE")
@@ -46,4 +47,11 @@ func (s *server) HandleAPIRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 	})
+}
+
+func err500(err error, msg string, w http.ResponseWriter) {
+	log.Errorf("%s: %s", msg, err)
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+	return
 }

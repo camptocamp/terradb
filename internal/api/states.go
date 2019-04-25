@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/terraform/state"
-	log "github.com/sirupsen/logrus"
 )
 
 func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
@@ -30,21 +28,58 @@ func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&document)
 	if err != nil {
-		log.Errorf("failed to decode body: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to decode body", w)
 		return
 	}
 
 	err = s.st.InsertState(document, timestamp, source, params["name"])
 	if err != nil {
-		log.Errorf("failed to insert state: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to insert state", w)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+	return
+}
+
+func (s *server) ListStates(w http.ResponseWriter, r *http.Request) {
+	page := 1
+	per_page := 100
+	var err error
+	if v := r.URL.Query().Get("page"); v != "" {
+		page, err = strconv.Atoi(v)
+		if err != nil {
+			err500(err, "failed to parse page", w)
+			return
+		}
+	}
+	if v := r.URL.Query().Get("per_page"); v != "" {
+		per_page, err = strconv.Atoi(v)
+		if err != nil {
+			err500(err, "failed to parse per_page", w)
+			return
+		}
+	}
+
+	states, err := s.st.ListStates(page, per_page)
+	if err != nil {
+		err500(err, "failed to retrieve states", w)
+		return
+	}
+
+	if len(states) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	data, err := json.Marshal(states)
+	if err != nil {
+		err500(err, "failed to marshal states", w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 	return
 }
 
@@ -56,31 +91,25 @@ func (s *server) GetState(w http.ResponseWriter, r *http.Request) {
 		var err error
 		serial, err = strconv.Atoi(v)
 		if err != nil {
-			log.Errorf("failed to parse serial: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+			err500(err, "failed to parse serial", w)
 			return
 		}
 	}
 
 	document, err := s.st.GetState(params["name"], serial)
 	if err != nil {
-		log.Errorf("failed to retrieve latest state: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to retrieve latest state", w)
 		return
 	}
 
 	if document == nil {
-		w.WriteHeader(http.StatusNoContent)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	data, err := json.Marshal(document)
 	if err != nil {
-		log.Errorf("failed to marshal state: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to marshal state", w)
 		return
 	}
 
@@ -94,9 +123,7 @@ func (s *server) RemoveState(w http.ResponseWriter, r *http.Request) {
 
 	err := s.st.RemoveState(params["name"])
 	if err != nil {
-		log.Errorf("failed to remove state: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to remove state", w)
 		return
 	}
 
@@ -111,25 +138,19 @@ func (s *server) LockState(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Errorf("failed to read body: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to read body", w)
 		return
 	}
 
 	err = json.Unmarshal(body, &currentLock)
 	if err != nil {
-		log.Errorf("failed to unmarshal lock: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to unmarshal lock", w)
 		return
 	}
 
 	lock, err := s.st.GetLockStatus(params["name"])
 	if err != nil {
-		log.Errorf("failed to get lock status: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to get lock status", w)
 		return
 	}
 
@@ -151,9 +172,7 @@ func (s *server) LockState(w http.ResponseWriter, r *http.Request) {
 
 	err = s.st.LockState(params["name"], currentLock)
 	if err != nil {
-		log.Errorf("failed to lock state: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to lock state", w)
 		return
 	}
 
@@ -168,25 +187,19 @@ func (s *server) UnlockState(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Errorf("failed to read body: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to read body", w)
 		return
 	}
 
 	err = json.Unmarshal(body, &lockData)
 	if err != nil {
-		log.Errorf("failed to unmarshal lock: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to unmarshal lock", w)
 		return
 	}
 
 	err = s.st.UnlockState(params["name"], lockData)
 	if err != nil {
-		log.Errorf("failed to unlock state: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
+		err500(err, "failed to unlock state", w)
 		return
 	}
 

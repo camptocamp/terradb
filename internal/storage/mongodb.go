@@ -8,6 +8,7 @@ import (
 
 	//log "github.com/sirupsen/logrus"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -25,7 +26,7 @@ type MongoDBStorage struct {
 	client *mongo.Client
 }
 
-type document struct {
+type mongoDoc struct {
 	Timestamp string
 	Source    string
 	State     interface{}
@@ -66,9 +67,7 @@ func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus interface{}, er
 
 	var data map[string]interface{}
 
-	res := collection.FindOne(ctx, map[string]interface{}{
-		"name": name,
-	})
+	res := collection.FindOne(ctx, bson.M{"name": name})
 	if res.Err() != nil {
 		err = res.Err()
 		return
@@ -128,6 +127,43 @@ func (st *MongoDBStorage) RemoveState(name string) (err error) {
 	return
 }
 
+// ListStates returns all state names from TerraDB
+func (st *MongoDBStorage) ListStates(page_num, page_size int) (states []Document, err error) {
+	collection := st.client.Database("terradb").Collection("terraform_states")
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+
+	skips := page_size * (page_num - 1)
+
+	pl := mongo.Pipeline{
+		{{
+			"$group", bson.D{
+				{"_id", "$name"},
+				{"name", bson.D{{"$last", "$name"}}},
+				{"state", bson.D{{"$last", "$state"}}},
+			},
+		}},
+		{{"$skip", skips}},
+		{{"$limit", page_size}},
+	}
+	cur, err := collection.Aggregate(ctx, pl, options.Aggregate())
+	if err != nil {
+		return states, fmt.Errorf("failed to list states: %v", err)
+	}
+
+	defer cur.Close(context.Background())
+
+	for cur.Next(nil) {
+		document := Document{}
+		err = cur.Decode(&document)
+		if err != nil {
+			return states, fmt.Errorf("failed to decode states: %v", err)
+		}
+		states = append(states, document)
+	}
+
+	return
+}
+
 // GetState retrieves a Terraform state, at a given serial.
 // If serial is 0, it gets the latest serial
 func (st *MongoDBStorage) GetState(name string, serial int) (document interface{}, err error) {
@@ -143,11 +179,10 @@ func (st *MongoDBStorage) GetState(name string, serial int) (document interface{
 		filter["state.serial"] = serial
 	}
 
-	err = collection.FindOne(ctx, filter, &options.FindOneOptions{
-		Sort: map[string]interface{}{
-			"state.serial": -1,
-		},
-	}).Decode(&data)
+	err = collection.FindOne(
+		ctx, filter,
+		options.FindOne().SetSort(bson.M{"state.serial": -1}),
+	).Decode(&data)
 
 	if err == mongo.ErrNoDocuments {
 		return nil, nil
@@ -156,7 +191,7 @@ func (st *MongoDBStorage) GetState(name string, serial int) (document interface{
 		return
 	}
 
-	document, ok := data["state"].(interface{})
+	document, ok := data["state"]
 	if !ok {
 		err = fmt.Errorf("state file not found")
 	}
@@ -185,7 +220,7 @@ func (st *MongoDBStorage) InsertState(doc interface{}, timestamp, source, name s
 		"name": "%s"
 	}`, serial, name)), &query)
 
-	data := &document{
+	data := &mongoDoc{
 		Timestamp: timestamp,
 		Source:    source,
 		Name:      name,

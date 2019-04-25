@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/camptocamp/terradb/internal/storage"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -17,6 +18,16 @@ type Client struct {
 // NewClient returns a new TerraDB client from its URL
 func NewClient(url string) *Client {
 	return &Client{&http.Client{}, url}
+}
+
+// ListStates lists all state names in TerraDB
+func (c *Client) ListStates() (states []storage.Document, err error) {
+	err = c.get(&states, "states", nil)
+	if err != nil {
+		return states, fmt.Errorf("failed to retrieve states: %v", err)
+	}
+
+	return
 }
 
 // GetState returns a TerraDB state from its name and serial
