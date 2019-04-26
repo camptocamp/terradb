@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/camptocamp/terradb/internal/storage"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/terraform/state"
+	"github.com/hashicorp/terraform/terraform"
 )
 
 func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +26,7 @@ func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
 		source = "direct"
 	}
 
-	var document interface{}
+	var document terraform.State
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&document)
 	if err != nil {
@@ -97,13 +99,11 @@ func (s *server) GetState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	document, err := s.st.GetState(params["name"], serial)
-	if err != nil {
-		err500(err, "failed to retrieve latest state", w)
-		return
-	}
-
-	if document == nil {
+	if err == storage.ErrNoDocuments {
 		w.WriteHeader(http.StatusNotFound)
+		return
+	} else if err != nil {
+		err500(err, "failed to retrieve latest state", w)
 		return
 	}
 

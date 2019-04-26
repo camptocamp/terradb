@@ -8,6 +8,7 @@ import (
 
 	//log "github.com/sirupsen/logrus"
 
+	"github.com/hashicorp/terraform/terraform"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -171,11 +172,10 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (states []Document
 
 // GetState retrieves a Terraform state, at a given serial.
 // If serial is 0, it gets the latest serial
-func (st *MongoDBStorage) GetState(name string, serial int) (document interface{}, err error) {
+func (st *MongoDBStorage) GetState(name string, serial int) (doc Document, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
-	var data map[string]interface{}
 	filter := map[string]interface{}{
 		"name": name,
 	}
@@ -187,43 +187,28 @@ func (st *MongoDBStorage) GetState(name string, serial int) (document interface{
 	err = collection.FindOne(
 		ctx, filter,
 		options.FindOne().SetSort(bson.M{"state.serial": -1}),
-	).Decode(&data)
+	).Decode(&doc)
 
 	if err == mongo.ErrNoDocuments {
-		return nil, nil
+		return doc, ErrNoDocuments
 	} else if err != nil {
 		err = fmt.Errorf("failed to decode state: %v", err)
 		return
 	}
 
-	document, ok := data["state"]
-	if !ok {
-		err = fmt.Errorf("state file not found")
-	}
 	return
 }
 
 // InsertState adds a Terraform state to the database.
-func (st *MongoDBStorage) InsertState(doc interface{}, timestamp, source, name string) (err error) {
+func (st *MongoDBStorage) InsertState(doc terraform.State, timestamp, source, name string) (err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-
-	v, ok := doc.(map[string]interface{})
-	if !ok {
-		err = fmt.Errorf("failed to unmarshal document")
-		return
-	}
-
-	serial, ok := v["serial"].(int)
-	if !ok {
-		serial = 0
-	}
 
 	var query interface{}
 	json.Unmarshal([]byte(fmt.Sprintf(`{
 		"state.serial": "%v",
 		"name": "%s"
-	}`, serial, name)), &query)
+	}`, doc.Serial, name)), &query)
 
 	data := &mongoDoc{
 		Timestamp: timestamp,
