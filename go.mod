@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/mux v1.7.1
 	github.com/hashicorp/terraform v0.11.13
 	github.com/jessevdk/go-flags v1.4.0
+	github.com/rs/cors v1.6.0
 	github.com/sirupsen/logrus v1.4.1
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect

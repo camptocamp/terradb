@@ -139,6 +139,8 @@ github.com/posener/complete
 github.com/posener/complete/cmd/install
 github.com/posener/complete/cmd
 github.com/posener/complete/match
+# github.com/rs/cors v1.6.0
+github.com/rs/cors
 # github.com/sirupsen/logrus v1.4.1
 github.com/sirupsen/logrus
 # github.com/ulikunitz/xz v0.5.4
@@ -159,18 +161,19 @@ github.com/zclconf/go-cty/cty/gocty
 github.com/zclconf/go-cty/cty/set
 github.com/zclconf/go-cty/cty/json
 # go.mongodb.org/mongo-driver v1.0.0
+go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/mongo
 go.mongodb.org/mongo-driver/mongo/options
 go.mongodb.org/mongo-driver/mongo/readpref
-go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/bson/bsoncodec
+go.mongodb.org/mongo-driver/bson/bsonrw
 go.mongodb.org/mongo-driver/bson/bsontype
 go.mongodb.org/mongo-driver/bson/primitive
+go.mongodb.org/mongo-driver/x/bsonx/bsoncore
 go.mongodb.org/mongo-driver/event
 go.mongodb.org/mongo-driver/mongo/readconcern
 go.mongodb.org/mongo-driver/mongo/writeconcern
 go.mongodb.org/mongo-driver/x/bsonx
-go.mongodb.org/mongo-driver/x/bsonx/bsoncore
 go.mongodb.org/mongo-driver/x/mongo/driver
 go.mongodb.org/mongo-driver/x/mongo/driver/auth
 go.mongodb.org/mongo-driver/x/mongo/driver/session
@@ -182,7 +185,6 @@ go.mongodb.org/mongo-driver/x/network/connstring
 go.mongodb.org/mongo-driver/x/network/description
 go.mongodb.org/mongo-driver/x/network/result
 go.mongodb.org/mongo-driver/tag
-go.mongodb.org/mongo-driver/bson/bsonrw
 go.mongodb.org/mongo-driver/x/network/wiremessage
 go.mongodb.org/mongo-driver/x/mongo/driver/auth/internal/gssapi
 go.mongodb.org/mongo-driver/x/network/address
@@ -192,12 +194,12 @@ go.mongodb.org/mongo-driver/internal
 # golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/openpgp
-golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/openpgp/armor
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
+golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp/elgamal
 # golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3

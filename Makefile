@@ -30,6 +30,6 @@ test:
 	go test -cover -coverprofile=coverage -v ./...
 
 vendor:
-	go mod vendor
+	GO111MODULE=on go mod vendor
 
 .PHONY: all vendor lint vet clean test

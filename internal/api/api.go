@@ -7,6 +7,8 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/rs/cors"
+
 	"github.com/camptocamp/terradb/internal/storage"
 )
 
@@ -38,8 +40,14 @@ func StartServer(cfg *API, st storage.Storage) {
 	apiRtr.HandleFunc("/{name}", s.LockState).Methods("LOCK")
 	apiRtr.HandleFunc("/{name}", s.UnlockState).Methods("UNLOCK")
 
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+	})
+
+	handler := c.Handler(router)
+
 	log.Infof("Listening on %s:%s", cfg.Address, cfg.Port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", cfg.Address, cfg.Port), router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", cfg.Address, cfg.Port), handler))
 	return
 }
 
