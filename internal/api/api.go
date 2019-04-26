@@ -39,6 +39,7 @@ func StartServer(cfg *API, st storage.Storage) {
 	apiRtr.HandleFunc("/{name}", s.RemoveState).Methods("DELETE")
 	apiRtr.HandleFunc("/{name}", s.LockState).Methods("LOCK")
 	apiRtr.HandleFunc("/{name}", s.UnlockState).Methods("UNLOCK")
+	apiRtr.HandleFunc("/{name}/serials", s.ListStateSerials).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

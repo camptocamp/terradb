@@ -36,4 +36,5 @@ type Storage interface {
 	GetLockStatus(name string) (lockStatus interface{}, err error)
 	LockState(name string, lockData interface{}) (err error)
 	UnlockState(name string, lockData interface{}) (err error)
+	ListStateSerials(name string, page_num, page_size int) (coll DocumentCollection, err error)
 }

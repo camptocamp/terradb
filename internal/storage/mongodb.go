@@ -240,3 +240,49 @@ func (st *MongoDBStorage) InsertState(doc terraform.State, timestamp, source, na
 
 	return
 }
+
+// ListStateSerials returns all state serials with a given name.
+func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int) (coll DocumentCollection, err error) {
+	collection := st.client.Database("terradb").Collection("terraform_states")
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+
+	skips := page_size * (page_num - 1)
+
+	pl := mongo.Pipeline{
+		{{"$match", bson.D{{"name", name}}}},
+		{{"$sort", bson.D{{"state.serial", 1}}}},
+		{{"$facet", bson.D{
+			{"metadata", bson.A{
+				bson.D{{"$count", "total"}},
+				bson.D{{"$addFields", bson.D{{"page", page_num}}}},
+			}},
+			{"data", bson.A{
+				bson.D{{"$skip", skips}},
+				bson.D{{"$limit", page_size}},
+			}},
+		},
+		}},
+	}
+	cur, err := collection.Aggregate(ctx, pl, options.Aggregate())
+	if err != nil {
+		return coll, fmt.Errorf("failed to list states: %v", err)
+	}
+
+	defer cur.Close(context.Background())
+
+	for cur.Next(nil) {
+		err = cur.Decode(&coll)
+		if err != nil {
+			return coll, fmt.Errorf("failed to decode states: %v", err)
+		}
+		for _, s := range coll.Data {
+			s.LastModified, err = time.Parse("20060102150405", s.Timestamp)
+			if err != nil {
+				return coll, fmt.Errorf("failed to convert timestamp: %v", err)
+			}
+		}
+		return
+	}
+
+	return
+}

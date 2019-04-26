@@ -207,5 +207,41 @@ func (s *server) UnlockState(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	return
+}
 
+func (s *server) ListStateSerials(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	page := 1
+	per_page := 100
+	var err error
+	if v := r.URL.Query().Get("page"); v != "" {
+		page, err = strconv.Atoi(v)
+		if err != nil {
+			err500(err, "failed to parse page", w)
+			return
+		}
+	}
+	if v := r.URL.Query().Get("per_page"); v != "" {
+		per_page, err = strconv.Atoi(v)
+		if err != nil {
+			err500(err, "failed to parse per_page", w)
+			return
+		}
+	}
+
+	coll, err := s.st.ListStateSerials(params["name"], page, per_page)
+	if err != nil {
+		err500(err, "failed to retrieve state serials", w)
+		return
+	}
+
+	data, err := json.Marshal(coll)
+	if err != nil {
+		err500(err, "failed to marshal state serials", w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+	return
 }

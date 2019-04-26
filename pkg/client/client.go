@@ -21,7 +21,7 @@ func NewClient(url string) *Client {
 }
 
 // ListStates lists all state names in TerraDB
-func (c *Client) ListStates() (states []storage.Document, err error) {
+func (c *Client) ListStates() (states storage.DocumentCollection, err error) {
 	err = c.get(&states, "states", nil)
 	if err != nil {
 		return states, fmt.Errorf("failed to retrieve states: %v", err)
@@ -40,6 +40,16 @@ func (c *Client) GetState(name string, serial int) (st terraform.State, err erro
 	err = c.get(&st, "states/"+name, params)
 	if err != nil {
 		return st, fmt.Errorf("failed to retrieve state: %v", err)
+	}
+
+	return
+}
+
+// ListStateSerials lists all state serials and last_modified times for a given name
+func (c *Client) ListStateSerials(name string) (coll storage.DocumentCollection, err error) {
+	err = c.get(&coll, "states/"+name+"/serials", nil)
+	if err != nil {
+		return coll, fmt.Errorf("failed to retrieve state serials: %v", err)
 	}
 
 	return
