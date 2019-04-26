@@ -15,13 +15,21 @@ type Document struct {
 	State        *terraform.State `json:"state"`
 }
 
+type DocumentCollection struct {
+	Metadata []struct {
+		Total int `json:"total"`
+		Page  int `json:"page"`
+	} `json:"metadata"`
+	Data []*Document `json:"data"`
+}
+
 // ErrNoDocuments
 var ErrNoDocuments = errors.New("No document found")
 
 // Storage is an abstraction over database engines
 type Storage interface {
 	GetName() string
-	ListStates(page_num, page_size int) (states []Document, err error)
+	ListStates(page_num, page_size int) (coll DocumentCollection, err error)
 	GetState(name string, serial int) (doc Document, err error)
 	InsertState(document terraform.State, timestamp, source, name string) (err error)
 	RemoveState(name string) (err error)

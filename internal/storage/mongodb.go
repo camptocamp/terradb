@@ -129,7 +129,7 @@ func (st *MongoDBStorage) RemoveState(name string) (err error) {
 }
 
 // ListStates returns all state names from TerraDB
-func (st *MongoDBStorage) ListStates(page_num, page_size int) (states []Document, err error) {
+func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll DocumentCollection, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -144,27 +144,37 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (states []Document
 				{"timestamp", bson.D{{"$last", "$timestamp"}}},
 			},
 		}},
-		{{"$skip", skips}},
-		{{"$limit", page_size}},
+		{{"$facet", bson.D{
+			{"metadata", bson.A{
+				bson.D{{"$count", "total"}},
+				bson.D{{"$addFields", bson.D{{"page", page_num}}}},
+			}},
+			{"data", bson.A{
+				bson.D{{"$skip", skips}},
+				bson.D{{"$limit", page_size}},
+			}},
+		},
+		}},
 	}
 	cur, err := collection.Aggregate(ctx, pl, options.Aggregate())
 	if err != nil {
-		return states, fmt.Errorf("failed to list states: %v", err)
+		return coll, fmt.Errorf("failed to list states: %v", err)
 	}
 
 	defer cur.Close(context.Background())
 
 	for cur.Next(nil) {
-		document := Document{}
-		err = cur.Decode(&document)
+		err = cur.Decode(&coll)
 		if err != nil {
-			return states, fmt.Errorf("failed to decode states: %v", err)
+			return coll, fmt.Errorf("failed to decode states: %v", err)
 		}
-		document.LastModified, err = time.Parse("20060102150405", document.Timestamp)
-		if err != nil {
-			return states, fmt.Errorf("failed to convert timestamp: %v", err)
+		for _, s := range coll.Data {
+			s.LastModified, err = time.Parse("20060102150405", s.Timestamp)
+			if err != nil {
+				return coll, fmt.Errorf("failed to convert timestamp: %v", err)
+			}
 		}
-		states = append(states, document)
+		return
 	}
 
 	return

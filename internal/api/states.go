@@ -63,18 +63,20 @@ func (s *server) ListStates(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	states, err := s.st.ListStates(page, per_page)
+	coll, err := s.st.ListStates(page, per_page)
 	if err != nil {
 		err500(err, "failed to retrieve states", w)
 		return
 	}
 
-	if len(states) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+	/*
+		if len(coll.Data) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	*/
 
-	data, err := json.Marshal(states)
+	data, err := json.Marshal(coll)
 	if err != nil {
 		err500(err, "failed to marshal states", w)
 		return
