@@ -30,7 +30,7 @@ var ErrNoDocuments = errors.New("No document found")
 type Storage interface {
 	GetName() string
 	ListStates(page_num, page_size int) (coll DocumentCollection, err error)
-	GetState(name string, serial int) (doc Document, err error)
+	GetState(name string, serial int) (state terraform.State, err error)
 	InsertState(document terraform.State, timestamp, source, name string) (err error)
 	RemoveState(name string) (err error)
 	GetLockStatus(name string) (lockStatus interface{}, err error)

@@ -182,7 +182,7 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll DocumentColl
 
 // GetState retrieves a Terraform state, at a given serial.
 // If serial is 0, it gets the latest serial
-func (st *MongoDBStorage) GetState(name string, serial int) (doc Document, err error) {
+func (st *MongoDBStorage) GetState(name string, serial int) (state terraform.State, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -194,18 +194,21 @@ func (st *MongoDBStorage) GetState(name string, serial int) (doc Document, err e
 		filter["state.serial"] = serial
 	}
 
+	var doc Document
 	err = collection.FindOne(
 		ctx, filter,
 		options.FindOne().SetSort(bson.M{"state.serial": -1}),
 	).Decode(&doc)
 
 	if err == mongo.ErrNoDocuments {
-		return doc, ErrNoDocuments
+		err = ErrNoDocuments
+		return
 	} else if err != nil {
 		err = fmt.Errorf("failed to decode state: %v", err)
 		return
 	}
 
+	state = *doc.State
 	return
 }
 
