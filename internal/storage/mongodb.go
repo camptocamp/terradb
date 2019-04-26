@@ -140,6 +140,7 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (states []Document
 				{"_id", "$name"},
 				{"name", bson.D{{"$last", "$name"}}},
 				{"state", bson.D{{"$last", "$state"}}},
+				{"timestamp", bson.D{{"$last", "$timestamp"}}},
 			},
 		}},
 		{{"$skip", skips}},
@@ -157,6 +158,10 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (states []Document
 		err = cur.Decode(&document)
 		if err != nil {
 			return states, fmt.Errorf("failed to decode states: %v", err)
+		}
+		document.LastModified, err = time.Parse("20060102150405", document.Timestamp)
+		if err != nil {
+			return states, fmt.Errorf("failed to convert timestamp: %v", err)
 		}
 		states = append(states, document)
 	}

@@ -1,11 +1,17 @@
 package storage
 
-import "github.com/hashicorp/terraform/terraform"
+import (
+	"time"
+
+	"github.com/hashicorp/terraform/terraform"
+)
 
 // Document associates a name and a state
 type Document struct {
-	Name  string
-	State *terraform.State
+	Timestamp    string           `json:"-"`
+	LastModified time.Time        `json:"last_modified"`
+	Name         string           `json:"name"`
+	State        *terraform.State `json:"state"`
 }
 
 // Storage is an abstraction over database engines
