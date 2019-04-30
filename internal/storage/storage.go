@@ -15,6 +15,7 @@ type Document struct {
 	State        *terraform.State `json:"state"`
 }
 
+// DocumentCollection is a collection of Document, with metadata
 type DocumentCollection struct {
 	Metadata []struct {
 		Total int `json:"total"`
