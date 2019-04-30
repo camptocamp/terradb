@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	//log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -70,11 +70,13 @@ func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus LockInfo, err e
 		err = res.Err()
 		return
 	}
-	err = res.Decode(&lockStatus)
+	var lockDoc LockInfoDocument
+	err = res.Decode(&lockDoc)
 	// Assume no document is returned
 	if err != nil {
 		return lockStatus, ErrNoDocuments
 	}
+	lockStatus = lockDoc.Lock
 
 	return
 }
@@ -146,6 +148,19 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll DocumentColl
 			s.LastModified, err = time.Parse("20060102150405", s.Timestamp)
 			if err != nil {
 				return coll, fmt.Errorf("failed to convert timestamp: %v", err)
+			}
+
+			s.LockInfo, err = st.GetLockStatus(s.Name)
+			if err == nil {
+				s.Locked = true
+			} else if err == ErrNoDocuments {
+				log.WithFields(log.Fields{
+					"name": s.Name,
+				}).Info("Did not find lock info")
+				// Reset err
+				err = nil
+			} else {
+				return coll, fmt.Errorf("failed to retrieve lock for %s: %v", s.Name, err)
 			}
 		}
 		return
