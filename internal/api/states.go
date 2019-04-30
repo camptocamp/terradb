@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -45,22 +46,10 @@ func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) ListStates(w http.ResponseWriter, r *http.Request) {
-	page := 1
-	per_page := 100
-	var err error
-	if v := r.URL.Query().Get("page"); v != "" {
-		page, err = strconv.Atoi(v)
-		if err != nil {
-			err500(err, "failed to parse page", w)
-			return
-		}
-	}
-	if v := r.URL.Query().Get("per_page"); v != "" {
-		per_page, err = strconv.Atoi(v)
-		if err != nil {
-			err500(err, "failed to parse per_page", w)
-			return
-		}
+	page, per_page, err := parsePagination(r)
+	if err != nil {
+		err500(err, "", w)
+		return
 	}
 
 	coll, err := s.st.ListStates(page, per_page)
@@ -211,22 +200,10 @@ func (s *server) UnlockState(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) ListStateSerials(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	page := 1
-	per_page := 100
-	var err error
-	if v := r.URL.Query().Get("page"); v != "" {
-		page, err = strconv.Atoi(v)
-		if err != nil {
-			err500(err, "failed to parse page", w)
-			return
-		}
-	}
-	if v := r.URL.Query().Get("per_page"); v != "" {
-		per_page, err = strconv.Atoi(v)
-		if err != nil {
-			err500(err, "failed to parse per_page", w)
-			return
-		}
+	page, per_page, err := parsePagination(r)
+	if err != nil {
+		err500(err, "", w)
+		return
 	}
 
 	coll, err := s.st.ListStateSerials(params["name"], page, per_page)
@@ -243,5 +220,23 @@ func (s *server) ListStateSerials(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+	return
+}
+
+func parsePagination(r *http.Request) (page, per_page int, err error) {
+	page = 1
+	per_page = 100
+	if v := r.URL.Query().Get("page"); v != "" {
+		page, err = strconv.Atoi(v)
+		if err != nil {
+			return page, per_page, fmt.Errorf("failed to parse page: %v", err)
+		}
+	}
+	if v := r.URL.Query().Get("per_page"); v != "" {
+		per_page, err = strconv.Atoi(v)
+		if err != nil {
+			return page, per_page, fmt.Errorf("failed to parse per_page: %v", err)
+		}
+	}
 	return
 }
