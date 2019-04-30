@@ -133,29 +133,15 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll DocumentColl
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
-	skips := page_size * (page_num - 1)
-
-	pl := mongo.Pipeline{
-		{{
-			"$group", bson.D{
-				{"_id", "$name"},
-				{"name", bson.D{{"$last", "$name"}}},
-				{"state", bson.D{{"$last", "$state"}}},
-				{"timestamp", bson.D{{"$last", "$timestamp"}}},
-			},
-		}},
-		{{"$facet", bson.D{
-			{"metadata", bson.A{
-				bson.D{{"$count", "total"}},
-				bson.D{{"$addFields", bson.D{{"page", page_num}}}},
-			}},
-			{"data", bson.A{
-				bson.D{{"$skip", skips}},
-				bson.D{{"$limit", page_size}},
-			}},
-		},
-		}},
+	req := mongo.Pipeline{
+		{{"$group", bson.D{
+			{"_id", "$name"},
+			{"name", bson.D{{"$last", "$name"}}},
+			{"state", bson.D{{"$last", "$state"}}},
+			{"timestamp", bson.D{{"$last", "$timestamp"}}},
+		}}},
 	}
+	pl := paginateReq(req, page_num, page_size)
 	cur, err := collection.Aggregate(ctx, pl, options.Aggregate())
 	if err != nil {
 		return coll, fmt.Errorf("failed to list states: %v", err)
@@ -246,23 +232,12 @@ func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int)
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
-	skips := page_size * (page_num - 1)
-
-	pl := mongo.Pipeline{
+	req := mongo.Pipeline{
 		{{"$match", bson.D{{"name", name}}}},
 		{{"$sort", bson.D{{"state.serial", 1}}}},
-		{{"$facet", bson.D{
-			{"metadata", bson.A{
-				bson.D{{"$count", "total"}},
-				bson.D{{"$addFields", bson.D{{"page", page_num}}}},
-			}},
-			{"data", bson.A{
-				bson.D{{"$skip", skips}},
-				bson.D{{"$limit", page_size}},
-			}},
-		},
-		}},
 	}
+
+	pl := paginateReq(req, page_num, page_size)
 	cur, err := collection.Aggregate(ctx, pl, options.Aggregate())
 	if err != nil {
 		return coll, fmt.Errorf("failed to list states: %v", err)
@@ -283,6 +258,26 @@ func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int)
 		}
 		return
 	}
+
+	return
+}
+
+func paginateReq(req mongo.Pipeline, page_num, page_size int) (pl mongo.Pipeline) {
+	skips := page_size * (page_num - 1)
+
+	pl = append(req,
+		bson.D{{"$facet", bson.D{
+			{"metadata", bson.A{
+				bson.D{{"$count", "total"}},
+				bson.D{{"$addFields", bson.D{{"page", page_num}}}},
+			}},
+			{"data", bson.A{
+				bson.D{{"$skip", skips}},
+				bson.D{{"$limit", page_size}},
+			}},
+		},
+		}},
+	)
 
 	return
 }
