@@ -10,8 +10,6 @@ import (
 
 	"github.com/camptocamp/terradb/internal/storage"
 	"github.com/gorilla/mux"
-	"github.com/hashicorp/terraform/state"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +25,7 @@ func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
 		source = "direct"
 	}
 
-	var document terraform.State
+	var document storage.State
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&document)
 	if err != nil {
@@ -125,7 +123,7 @@ func (s *server) RemoveState(w http.ResponseWriter, r *http.Request) {
 func (s *server) LockState(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	var currentLock, remoteLock state.LockInfo
+	var currentLock, remoteLock storage.LockInfo
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -171,7 +169,7 @@ func (s *server) LockState(w http.ResponseWriter, r *http.Request) {
 func (s *server) UnlockState(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	var lockData state.LockInfo
+	var lockData storage.LockInfo
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

@@ -8,8 +8,6 @@ import (
 
 	//log "github.com/sirupsen/logrus"
 
-	"github.com/hashicorp/terraform/state"
-	"github.com/hashicorp/terraform/terraform"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -63,7 +61,7 @@ func (*MongoDBStorage) GetName() string {
 }
 
 // GetLockStatus returns a Terraform lock.
-func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus state.LockInfo, err error) {
+func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus LockInfo, err error) {
 	collection := st.client.Database("terradb").Collection("locks")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -82,7 +80,7 @@ func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus state.LockInfo,
 }
 
 // LockState locks a Terraform state.
-func (st *MongoDBStorage) LockState(name string, lockData state.LockInfo) (err error) {
+func (st *MongoDBStorage) LockState(name string, lockData LockInfo) (err error) {
 	collection := st.client.Database("terradb").Collection("locks")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -95,7 +93,7 @@ func (st *MongoDBStorage) LockState(name string, lockData state.LockInfo) (err e
 }
 
 // UnlockState unlocks a Terraform state.
-func (st *MongoDBStorage) UnlockState(name string, lockData state.LockInfo) (err error) {
+func (st *MongoDBStorage) UnlockState(name string, lockData LockInfo) (err error) {
 	collection := st.client.Database("terradb").Collection("locks")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -158,7 +156,7 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll DocumentColl
 
 // GetState retrieves a Terraform state, at a given serial.
 // If serial is 0, it gets the latest serial
-func (st *MongoDBStorage) GetState(name string, serial int) (state terraform.State, err error) {
+func (st *MongoDBStorage) GetState(name string, serial int) (state State, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -189,7 +187,7 @@ func (st *MongoDBStorage) GetState(name string, serial int) (state terraform.Sta
 }
 
 // InsertState adds a Terraform state to the database.
-func (st *MongoDBStorage) InsertState(doc terraform.State, timestamp, source, name string) (err error) {
+func (st *MongoDBStorage) InsertState(doc State, timestamp, source, name string) (err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
