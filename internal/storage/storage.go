@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/hashicorp/terraform/state"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -34,8 +35,8 @@ type Storage interface {
 	GetState(name string, serial int) (state terraform.State, err error)
 	InsertState(document terraform.State, timestamp, source, name string) (err error)
 	RemoveState(name string) (err error)
-	GetLockStatus(name string) (lockStatus interface{}, err error)
-	LockState(name string, lockData interface{}) (err error)
-	UnlockState(name string, lockData interface{}) (err error)
+	GetLockStatus(name string) (lockStatus state.LockInfo, err error)
+	LockState(name string, lockData state.LockInfo) (err error)
+	UnlockState(name string, lockData state.LockInfo) (err error)
 	ListStateSerials(name string, page_num, page_size int) (coll DocumentCollection, err error)
 }

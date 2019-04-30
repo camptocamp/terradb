@@ -125,7 +125,7 @@ func (s *server) RemoveState(w http.ResponseWriter, r *http.Request) {
 func (s *server) LockState(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	var currentLock, remoteLock *state.LockInfo
+	var currentLock, remoteLock state.LockInfo
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -139,42 +139,39 @@ func (s *server) LockState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lock, err := s.st.GetLockStatus(params["name"])
-	if err != nil {
+	remoteLock, err = s.st.GetLockStatus(params["name"])
+	if err == storage.ErrNoDocuments {
+		err = s.st.LockState(params["name"], currentLock)
+		if err != nil {
+			err500(err, "failed to lock state", w)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		return
+	} else if err != nil {
 		err500(err, "failed to get lock status", w)
 		return
 	}
 
-	if lock != nil {
-		remoteLock = lock.(*state.LockInfo)
-
-		if currentLock.ID == remoteLock.ID {
-			d, _ := json.Marshal(lock)
-			w.WriteHeader(http.StatusLocked)
-			w.Write(d)
-			return
-		}
-
+	if currentLock.ID == remoteLock.ID {
 		d, _ := json.Marshal(remoteLock)
-		w.WriteHeader(http.StatusConflict)
+		w.WriteHeader(http.StatusLocked)
 		w.Write(d)
 		return
 	}
 
-	err = s.st.LockState(params["name"], currentLock)
-	if err != nil {
-		err500(err, "failed to lock state", w)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	d, _ := json.Marshal(remoteLock)
+	w.WriteHeader(http.StatusConflict)
+	w.Write(d)
 	return
+
 }
 
 func (s *server) UnlockState(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	var lockData *state.LockInfo
+	var lockData state.LockInfo
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

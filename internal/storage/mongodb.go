@@ -8,6 +8,7 @@ import (
 
 	//log "github.com/sirupsen/logrus"
 
+	"github.com/hashicorp/terraform/state"
 	"github.com/hashicorp/terraform/terraform"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -62,37 +63,26 @@ func (*MongoDBStorage) GetName() string {
 }
 
 // GetLockStatus returns a Terraform lock.
-func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus interface{}, err error) {
+func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus state.LockInfo, err error) {
 	collection := st.client.Database("terradb").Collection("locks")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-
-	var data map[string]interface{}
 
 	res := collection.FindOne(ctx, bson.M{"name": name})
 	if res.Err() != nil {
 		err = res.Err()
 		return
 	}
-	err = res.Decode(&data)
+	err = res.Decode(&lockStatus)
 	// Assume no document is returned
 	if err != nil {
-		err = nil
-		return
-	}
-	if data == nil {
-		return
-	}
-
-	lockStatus, ok := data["lock"].(interface{})
-	if !ok {
-		err = fmt.Errorf("lock info not found")
+		return lockStatus, ErrNoDocuments
 	}
 
 	return
 }
 
 // LockState locks a Terraform state.
-func (st *MongoDBStorage) LockState(name string, lockData interface{}) (err error) {
+func (st *MongoDBStorage) LockState(name string, lockData state.LockInfo) (err error) {
 	collection := st.client.Database("terradb").Collection("locks")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -105,7 +95,7 @@ func (st *MongoDBStorage) LockState(name string, lockData interface{}) (err erro
 }
 
 // UnlockState unlocks a Terraform state.
-func (st *MongoDBStorage) UnlockState(name string, lockData interface{}) (err error) {
+func (st *MongoDBStorage) UnlockState(name string, lockData state.LockInfo) (err error) {
 	collection := st.client.Database("terradb").Collection("locks")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
