@@ -46,7 +46,7 @@ func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) ListStates(w http.ResponseWriter, r *http.Request) {
-	page, per_page, err := parsePagination(r)
+	page, per_page, err := s.parsePagination(r)
 	if err != nil {
 		err500(err, "", w)
 		return
@@ -200,7 +200,7 @@ func (s *server) UnlockState(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) ListStateSerials(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	page, per_page, err := parsePagination(r)
+	page, per_page, err := s.parsePagination(r)
 	if err != nil {
 		err500(err, "", w)
 		return
@@ -223,9 +223,9 @@ func (s *server) ListStateSerials(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func parsePagination(r *http.Request) (page, per_page int, err error) {
+func (s *server) parsePagination(r *http.Request) (page, per_page int, err error) {
 	page = 1
-	per_page = 100
+	per_page = s.pageSize
 	if v := r.URL.Query().Get("page"); v != "" {
 		page, err = strconv.Atoi(v)
 		if err != nil {

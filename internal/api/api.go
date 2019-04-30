@@ -18,16 +18,19 @@ type API struct {
 	Port     string
 	Username string
 	Password string
+	PageSize int
 }
 
 type server struct {
-	st storage.Storage
+	st       storage.Storage
+	pageSize int
 }
 
 // StartServer starts the API server
 func StartServer(cfg *API, st storage.Storage) {
 	s := server{
-		st: st,
+		st:       st,
+		pageSize: cfg.PageSize,
 	}
 
 	router := mux.NewRouter().StrictSlash(true)

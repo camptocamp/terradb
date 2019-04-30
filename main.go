@@ -19,8 +19,9 @@ var opts struct {
 		Password string `long:"mongodb-password" description:"MongoDB Password" env:"MONGODB_PASSWORD"`
 	} `group:"MongoDB options"`
 	API struct {
-		Address string `long:"api-address" description:"Address on to bind the API server" env:"API_ADDRESS" default:"127.0.0.1"`
-		Port    string `long:"api-port" description:"Port on to listen" env:"API_PORT" default:"8080"`
+		Address  string `long:"api-address" description:"Address on to bind the API server" env:"API_ADDRESS" default:"127.0.0.1"`
+		Port     string `long:"api-port" description:"Port on to listen" env:"API_PORT" default:"8080"`
+		PageSize int    `long:"page-size" description:"Page size for list results" env:"API_PAGE_SIZE" default:"100"`
 	} `group:"API server options"`
 }
 
@@ -54,7 +55,8 @@ func main() {
 	}
 
 	api.StartServer(&api.API{
-		Address: opts.API.Address,
-		Port:    opts.API.Port,
+		Address:  opts.API.Address,
+		Port:     opts.API.Port,
+		PageSize: opts.API.PageSize,
 	}, st)
 }
