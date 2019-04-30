@@ -32,14 +32,14 @@ func StartServer(cfg *API, st storage.Storage) {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	apiRtr := router.PathPrefix("/v1/states").Subrouter()
-	apiRtr.HandleFunc("/", s.ListStates).Methods("GET")
-	apiRtr.HandleFunc("/{name}", s.InsertState).Methods("POST")
-	apiRtr.HandleFunc("/{name}", s.GetState).Methods("GET")
-	apiRtr.HandleFunc("/{name}", s.RemoveState).Methods("DELETE")
-	apiRtr.HandleFunc("/{name}", s.LockState).Methods("LOCK")
-	apiRtr.HandleFunc("/{name}", s.UnlockState).Methods("UNLOCK")
-	apiRtr.HandleFunc("/{name}/serials", s.ListStateSerials).Methods("GET")
+	apiRtr := router.PathPrefix("/v1").Subrouter()
+	apiRtr.HandleFunc("/states", s.ListStates).Methods("GET")
+	apiRtr.HandleFunc("/states/{name}", s.InsertState).Methods("POST")
+	apiRtr.HandleFunc("/states/{name}", s.GetState).Methods("GET")
+	apiRtr.HandleFunc("/states/{name}", s.RemoveState).Methods("DELETE")
+	apiRtr.HandleFunc("/states/{name}", s.LockState).Methods("LOCK")
+	apiRtr.HandleFunc("/states/{name}", s.UnlockState).Methods("UNLOCK")
+	apiRtr.HandleFunc("/states/{name}/serials", s.ListStateSerials).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
