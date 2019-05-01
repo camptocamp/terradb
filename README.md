@@ -79,7 +79,7 @@ appear in a `metadata` section of the results.
 
 ### `/states`
 
-Returns the latest serial of each states stored in the database, along with its
+Returns the latest serial of each state stored in the database, along with its
 lock information.
 
 
