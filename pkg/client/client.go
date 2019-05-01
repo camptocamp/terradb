@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/camptocamp/terradb/internal/storage"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 // Client is a TerraDB client
@@ -21,7 +20,7 @@ func NewClient(url string) *Client {
 }
 
 // ListStates lists all state names in TerraDB
-func (c *Client) ListStates() (states storage.DocumentCollection, err error) {
+func (c *Client) ListStates() (states storage.StateCollection, err error) {
 	err = c.get(&states, "states", nil)
 	if err != nil {
 		return states, fmt.Errorf("failed to retrieve states: %v", err)
@@ -32,7 +31,7 @@ func (c *Client) ListStates() (states storage.DocumentCollection, err error) {
 
 // GetState returns a TerraDB state from its name and serial
 // Use 0 as serial to return the latest version of the state
-func (c *Client) GetState(name string, serial int) (st terraform.State, err error) {
+func (c *Client) GetState(name string, serial int) (st storage.State, err error) {
 	params := map[string]string{
 		"serial": fmt.Sprintf("%v", serial),
 	}
@@ -46,7 +45,7 @@ func (c *Client) GetState(name string, serial int) (st terraform.State, err erro
 }
 
 // ListStateSerials lists all state serials and last_modified times for a given name
-func (c *Client) ListStateSerials(name string) (coll storage.DocumentCollection, err error) {
+func (c *Client) ListStateSerials(name string) (coll storage.StateCollection, err error) {
 	err = c.get(&coll, "states/"+name+"/serials", nil)
 	if err != nil {
 		return coll, fmt.Errorf("failed to retrieve state serials: %v", err)
