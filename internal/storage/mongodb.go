@@ -29,8 +29,19 @@ type MongoDBStorage struct {
 type mongoDoc struct {
 	Timestamp string
 	Source    string
-	State     interface{}
+	State     *State
 	Name      string
+}
+
+// a collection of paginated mongoDoc
+type mongoDocCollection struct {
+	Metadata []*Metadata
+	Docs     []*mongoDoc
+}
+
+type mongoLockInfoDoc struct {
+	Name string   `json:"name"`
+	Lock LockInfo `json:"lock"`
 }
 
 // NewMongoDB initializes a connection to the defined MongoDB instance.
@@ -70,7 +81,7 @@ func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus LockInfo, err e
 		err = res.Err()
 		return
 	}
-	var lockDoc LockInfoDocument
+	var lockDoc mongoLockInfoDoc
 	err = res.Decode(&lockDoc)
 	// Assume no document is returned
 	if err != nil {
@@ -85,6 +96,9 @@ func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus LockInfo, err e
 func (st *MongoDBStorage) LockState(name string, lockData LockInfo) (err error) {
 	collection := st.client.Database("terradb").Collection("locks")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+
+	// State file uses the same key as lock
+	lockData.Path = name
 
 	_, err = collection.InsertOne(ctx, map[string]interface{}{
 		"name": name,
@@ -119,7 +133,7 @@ func (st *MongoDBStorage) RemoveState(name string) (err error) {
 }
 
 // ListStates returns all state names from TerraDB
-func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll DocumentCollection, err error) {
+func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll StateCollection, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -140,28 +154,33 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll DocumentColl
 	defer cur.Close(context.Background())
 
 	for cur.Next(nil) {
-		err = cur.Decode(&coll)
+		var mongoColl mongoDocCollection
+		err = cur.Decode(&mongoColl)
 		if err != nil {
 			return coll, fmt.Errorf("failed to decode states: %v", err)
 		}
-		for _, s := range coll.Data {
-			s.LastModified, err = time.Parse("20060102150405", s.Timestamp)
+		coll.Metadata = mongoColl.Metadata
+		for _, d := range mongoColl.Docs {
+			state, err := d.toState()
 			if err != nil {
-				return coll, fmt.Errorf("failed to convert timestamp: %v", err)
+				return coll, fmt.Errorf("failed to get state: %v", err)
 			}
 
-			s.LockInfo, err = st.GetLockStatus(s.Name)
+			state.LockInfo, err = st.GetLockStatus(state.Name)
+			// Init value required because of omitempty
+			state.Locked = false
 			if err == nil {
-				s.Locked = true
+				state.Locked = true
 			} else if err == ErrNoDocuments {
 				log.WithFields(log.Fields{
-					"name": s.Name,
+					"name": state.Name,
 				}).Info("Did not find lock info")
 				// Reset err
 				err = nil
 			} else {
-				return coll, fmt.Errorf("failed to retrieve lock for %s: %v", s.Name, err)
+				return coll, fmt.Errorf("failed to retrieve lock for %s: %v", state.Name, err)
 			}
+			coll.Data = append(coll.Data, state)
 		}
 		return
 	}
@@ -183,7 +202,7 @@ func (st *MongoDBStorage) GetState(name string, serial int) (state State, err er
 		filter["state.serial"] = serial
 	}
 
-	var doc Document
+	var doc mongoDoc
 	err = collection.FindOne(
 		ctx, filter,
 		options.FindOne().SetSort(bson.M{"state.serial": -1}),
@@ -197,7 +216,25 @@ func (st *MongoDBStorage) GetState(name string, serial int) (state State, err er
 		return
 	}
 
-	state = *doc.State
+	s, err := doc.toState()
+	if err != nil {
+		return state, fmt.Errorf("failed to get state: %v", err)
+	}
+	state = *s
+	// Init value required because of omitempty
+	state.Locked = false
+	state.LockInfo, err = st.GetLockStatus(state.Name)
+	if err == nil {
+		state.Locked = true
+	} else if err == ErrNoDocuments {
+		log.WithFields(log.Fields{
+			"name": state.Name,
+		}).Info("Did not find lock info")
+		// Reset err
+		err = nil
+	} else {
+		return state, fmt.Errorf("failed to retrieve lock for %s: %v", state.Name, err)
+	}
 	return
 }
 
@@ -216,7 +253,7 @@ func (st *MongoDBStorage) InsertState(doc State, timestamp, source, name string)
 		Timestamp: timestamp,
 		Source:    source,
 		Name:      name,
-		State:     doc,
+		State:     &doc,
 	}
 
 	upsert := true
@@ -231,7 +268,7 @@ func (st *MongoDBStorage) InsertState(doc State, timestamp, source, name string)
 }
 
 // ListStateSerials returns all state serials with a given name.
-func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int) (coll DocumentCollection, err error) {
+func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int) (coll StateCollection, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -248,16 +285,22 @@ func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int)
 
 	defer cur.Close(context.Background())
 
+	var mongoColl mongoDocCollection
 	for cur.Next(nil) {
-		err = cur.Decode(&coll)
+		err = cur.Decode(&mongoColl)
 		if err != nil {
 			return coll, fmt.Errorf("failed to decode states: %v", err)
 		}
-		for _, s := range coll.Data {
-			s.LastModified, err = time.Parse("20060102150405", s.Timestamp)
+		coll.Metadata = mongoColl.Metadata
+		for _, d := range mongoColl.Docs {
+			state, err := d.toState()
 			if err != nil {
-				return coll, fmt.Errorf("failed to convert timestamp: %v", err)
+				return coll, fmt.Errorf("failed to get state: %v", err)
 			}
+			coll.Data = append(coll.Data, state)
+		}
+		if err != nil {
+			return coll, fmt.Errorf("failed to list states: %v", err)
 		}
 		return
 	}
@@ -274,7 +317,7 @@ func paginateReq(req mongo.Pipeline, page_num, page_size int) (pl mongo.Pipeline
 				bson.D{{"$count", "total"}},
 				bson.D{{"$addFields", bson.D{{"page", page_num}}}},
 			}},
-			{"data", bson.A{
+			{"docs", bson.A{
 				bson.D{{"$skip", skips}},
 				bson.D{{"$limit", page_size}},
 			}},
@@ -282,5 +325,15 @@ func paginateReq(req mongo.Pipeline, page_num, page_size int) (pl mongo.Pipeline
 		}},
 	)
 
+	return
+}
+
+func (d *mongoDoc) toState() (state *State, err error) {
+	state = d.State
+	state.Name = d.Name
+	state.LastModified, err = time.Parse("20060102150405", d.Timestamp)
+	if err != nil {
+		return state, fmt.Errorf("failed to convert timestamp: %v", err)
+	}
 	return
 }
