@@ -35,6 +35,8 @@ func StartServer(cfg *API, st storage.Storage) {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	router.Use(handleAPIRequest)
+
 	apiRtr := router.PathPrefix("/v1").Subrouter()
 	apiRtr.HandleFunc("/states", s.ListStates).Methods("GET")
 	apiRtr.HandleFunc("/states/{name}", s.InsertState).Methods("POST")
@@ -55,8 +57,9 @@ func StartServer(cfg *API, st storage.Storage) {
 	return
 }
 
-func (s *server) HandleAPIRequest(next http.Handler) http.Handler {
+func handleAPIRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
 }
