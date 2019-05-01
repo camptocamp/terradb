@@ -95,6 +95,8 @@ type LockInfo struct {
 	Path string `json:"path,omitempty"`
 }
 
+type Resource = terraform.ResourceState
+
 // ErrNoDocuments returns an error when no documents were found in the storage
 var ErrNoDocuments = errors.New("No document found")
 
@@ -109,4 +111,5 @@ type Storage interface {
 	LockState(name string, lockData LockInfo) (err error)
 	UnlockState(name string, lockData LockInfo) (err error)
 	ListStateSerials(name string, pageNum, pageSize int) (coll StateCollection, err error)
+	GetResource(state, module, name string) (res Resource, err error)
 }

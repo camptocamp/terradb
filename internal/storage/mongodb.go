@@ -308,6 +308,32 @@ func (st *MongoDBStorage) ListStateSerials(name string, pageNum, pageSize int) (
 	return
 }
 
+// GetResource retrieves a Terraform resource given a state, module and name
+func (st *MongoDBStorage) GetResource(state, module, name string) (res Resource, err error) {
+	s, err := st.GetState(state, 0)
+	if err != nil {
+		return res, fmt.Errorf("failed to get resource: %v", err)
+	}
+
+	res, err = getResource(s, module, name)
+	return
+}
+
+func getResource(state State, module, name string) (res Resource, err error) {
+	for _, m := range state.Modules {
+		for _, p := range m.Path {
+			if p == module {
+				r, ok := m.Resources[name]
+				if ok {
+					return *r, nil
+				}
+				return res, ErrNoDocuments
+			}
+		}
+	}
+	return res, ErrNoDocuments
+}
+
 func paginateReq(req mongo.Pipeline, pageNum, pageSize int) (pl mongo.Pipeline) {
 	skips := pageSize * (pageNum - 1)
 

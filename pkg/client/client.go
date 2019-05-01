@@ -80,3 +80,13 @@ func (c *Client) get(v interface{}, path string, params map[string]string) error
 
 	return err
 }
+
+// GetResource returns a TerraDB resource from its state, module and name
+func (c *Client) GetResource(state, module, name string) (st storage.Resource, err error) {
+	err = c.get(&st, "resources/"+state+"/"+module+"/"+name, nil)
+	if err != nil {
+		return st, fmt.Errorf("failed to retrieve resource: %v", err)
+	}
+
+	return
+}
