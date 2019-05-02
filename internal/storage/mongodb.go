@@ -57,7 +57,8 @@ func NewMongoDB(config *MongoDBConfig) (st *MongoDBStorage, err error) {
 		})
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	st.client, err = mongo.Connect(ctx, clientOptions.ApplyURI(config.URL))
 	if err != nil {
 		return
@@ -74,7 +75,8 @@ func (*MongoDBStorage) GetName() string {
 // GetLockStatus returns a Terraform lock.
 func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus LockInfo, err error) {
 	collection := st.client.Database("terradb").Collection("locks")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	res := collection.FindOne(ctx, bson.M{"name": name})
 	if res.Err() != nil {
@@ -95,7 +97,8 @@ func (st *MongoDBStorage) GetLockStatus(name string) (lockStatus LockInfo, err e
 // LockState locks a Terraform state.
 func (st *MongoDBStorage) LockState(name string, lockData LockInfo) (err error) {
 	collection := st.client.Database("terradb").Collection("locks")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	// State file uses the same key as lock
 	lockData.Path = name
@@ -111,7 +114,8 @@ func (st *MongoDBStorage) LockState(name string, lockData LockInfo) (err error) 
 // UnlockState unlocks a Terraform state.
 func (st *MongoDBStorage) UnlockState(name string, lockData LockInfo) (err error) {
 	collection := st.client.Database("terradb").Collection("locks")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	_, err = collection.DeleteOne(ctx, map[string]interface{}{
 		"name": name,
@@ -123,7 +127,8 @@ func (st *MongoDBStorage) UnlockState(name string, lockData LockInfo) (err error
 // RemoveState removes the Terraform states.
 func (st *MongoDBStorage) RemoveState(name string) (err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	_, err = collection.DeleteOne(ctx, map[string]interface{}{
 		"name": name,
@@ -135,7 +140,8 @@ func (st *MongoDBStorage) RemoveState(name string) (err error) {
 // ListStates returns all state names from TerraDB
 func (st *MongoDBStorage) ListStates(pageNum, pageSize int) (coll StateCollection, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	req := mongo.Pipeline{
 		{{"$group", bson.D{
@@ -192,7 +198,8 @@ func (st *MongoDBStorage) ListStates(pageNum, pageSize int) (coll StateCollectio
 // If serial is 0, it gets the latest serial
 func (st *MongoDBStorage) GetState(name string, serial int) (state State, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	filter := map[string]interface{}{
 		"name": name,
@@ -241,7 +248,8 @@ func (st *MongoDBStorage) GetState(name string, serial int) (state State, err er
 // InsertState adds a Terraform state to the database.
 func (st *MongoDBStorage) InsertState(doc State, timestamp, source, name string) (err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	var query interface{}
 	json.Unmarshal([]byte(fmt.Sprintf(`{
@@ -270,7 +278,8 @@ func (st *MongoDBStorage) InsertState(doc State, timestamp, source, name string)
 // ListStateSerials returns all state serials with a given name.
 func (st *MongoDBStorage) ListStateSerials(name string, pageNum, pageSize int) (coll StateCollection, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	req := mongo.Pipeline{
 		{{"$match", bson.D{{"name", name}}}},
