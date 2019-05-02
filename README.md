@@ -1,5 +1,16 @@
 # TerraDB
 
+
+TerraDB is a centralized database and REST API dedicated to hosting and serving
+Terraform data. It can be used as a native HTTP backend to store Terraform
+remote states.
+
+Eventually, [Terraboard](https://camptocamp.github.io/terraboard) will be
+ported to use TerraDB as a backend, and we are also working
+on [InSpec](https://www.inspec.io/) plugins to perform compliance and
+acceptance tests on Terraform resources.
+
+
 ## Requirements
 
 * A MongoDB (>= 3.4) database
