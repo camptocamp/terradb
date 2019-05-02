@@ -181,17 +181,15 @@ func (st *MongoDBStorage) ListStates(pageNum, pageSize int) (coll StateCollectio
 				log.WithFields(log.Fields{
 					"name": state.Name,
 				}).Info("Did not find lock info")
-				// Reset err
-				err = nil
 			} else {
 				return coll, fmt.Errorf("failed to retrieve lock for %s: %v", state.Name, err)
 			}
 			coll.Data = append(coll.Data, state)
 		}
-		return
+		return coll, nil
 	}
 
-	return
+	return coll, nil
 }
 
 // GetState retrieves a Terraform state, at a given serial.
