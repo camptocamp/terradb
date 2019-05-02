@@ -4,6 +4,7 @@ A centralized database and REST API for Terraform data.
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/camptocamp/terradb.svg)](https://hub.docker.com/r/camptocamp/terradb/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/camptocamp/terradb)](https://goreportcard.com/report/github.com/camptocamp/terradb)
+[![Client Docs](https://img.shields.io/badge/godoc-client-0f74bf.svg)](https://godoc.org/github.com/camptocamp/terradb/pkg/client)
 [![Gitter](https://img.shields.io/gitter/room/camptocamp/terradb.svg)](https://gitter.im/camptocamp/terradb)
 [![Build Status](https://travis-ci.org/camptocamp/terradb.svg?branch=master)](https://travis-ci.org/camptocamp/terradb)
 [![Coverage Status](https://coveralls.io/repos/github/camptocamp/terradb/badge.svg?branch=master)](https://coveralls.io/github/camptocamp/terradb?branch=master)
