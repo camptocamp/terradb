@@ -95,7 +95,7 @@ type LockInfo struct {
 	Path string `json:"path,omitempty"`
 }
 
-// ErrNoDocuments
+// ErrNoDocuments returns an error when no documents were found in the storage
 var ErrNoDocuments = errors.New("No document found")
 
 // Storage is an abstraction over database engines
