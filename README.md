@@ -1,5 +1,17 @@
 # TerraDB
 
+A centralized database and REST API for Terraform data.
+
+[![Docker Pulls](https://img.shields.io/docker/pulls/camptocamp/terradb.svg)](https://hub.docker.com/r/camptocamp/terradb/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/camptocamp/terradb)](https://goreportcard.com/report/github.com/camptocamp/terradb)
+[![Gitter](https://img.shields.io/gitter/room/camptocamp/terradb.svg)](https://gitter.im/camptocamp/terradb)
+[![Build Status](https://travis-ci.org/camptocamp/terradb.svg?branch=master)](https://travis-ci.org/camptocamp/terradb)
+[![Coverage Status](https://coveralls.io/repos/github/camptocamp/terradb/badge.svg?branch=master)](https://coveralls.io/github/camptocamp/terradb?branch=master)
+[![By Camptocamp](https://img.shields.io/badge/by-camptocamp-fb7047.svg)](http://www.camptocamp.com)
+
+
+## What is it?
+
 
 TerraDB is a centralized database and REST API dedicated to hosting and serving
 Terraform data. It can be used as a native HTTP backend to store Terraform
