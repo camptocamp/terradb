@@ -44,13 +44,13 @@ func (s *server) InsertState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) ListStates(w http.ResponseWriter, r *http.Request) {
-	page, per_page, err := s.parsePagination(r)
+	page, pageSize, err := s.parsePagination(r)
 	if err != nil {
 		err500(err, "", w)
 		return
 	}
 
-	coll, err := s.st.ListStates(page, per_page)
+	coll, err := s.st.ListStates(page, pageSize)
 	if err != nil {
 		err500(err, "failed to retrieve states", w)
 		return
@@ -195,13 +195,13 @@ func (s *server) UnlockState(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) ListStateSerials(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	page, per_page, err := s.parsePagination(r)
+	page, pageSize, err := s.parsePagination(r)
 	if err != nil {
 		err500(err, "", w)
 		return
 	}
 
-	coll, err := s.st.ListStateSerials(params["name"], page, per_page)
+	coll, err := s.st.ListStateSerials(params["name"], page, pageSize)
 	if err != nil {
 		err500(err, "failed to retrieve state serials", w)
 		return
@@ -218,19 +218,19 @@ func (s *server) ListStateSerials(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (s *server) parsePagination(r *http.Request) (page, per_page int, err error) {
+func (s *server) parsePagination(r *http.Request) (page, pageSize int, err error) {
 	page = 1
-	per_page = s.pageSize
+	pageSize = s.pageSize
 	if v := r.URL.Query().Get("page"); v != "" {
 		page, err = strconv.Atoi(v)
 		if err != nil {
-			return page, per_page, fmt.Errorf("failed to parse page: %v", err)
+			return page, pageSize, fmt.Errorf("failed to parse page: %v", err)
 		}
 	}
 	if v := r.URL.Query().Get("per_page"); v != "" {
-		per_page, err = strconv.Atoi(v)
+		pageSize, err = strconv.Atoi(v)
 		if err != nil {
-			return page, per_page, fmt.Errorf("failed to parse per_page: %v", err)
+			return page, pageSize, fmt.Errorf("failed to parse per_page: %v", err)
 		}
 	}
 	return

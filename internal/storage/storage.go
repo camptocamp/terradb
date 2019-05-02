@@ -101,12 +101,12 @@ var ErrNoDocuments = errors.New("No document found")
 // Storage is an abstraction over database engines
 type Storage interface {
 	GetName() string
-	ListStates(page_num, page_size int) (coll StateCollection, err error)
+	ListStates(pageNum, pageSize int) (coll StateCollection, err error)
 	GetState(name string, serial int) (state State, err error)
 	InsertState(document State, timestamp, source, name string) (err error)
 	RemoveState(name string) (err error)
 	GetLockStatus(name string) (lockStatus LockInfo, err error)
 	LockState(name string, lockData LockInfo) (err error)
 	UnlockState(name string, lockData LockInfo) (err error)
-	ListStateSerials(name string, page_num, page_size int) (coll StateCollection, err error)
+	ListStateSerials(name string, pageNum, pageSize int) (coll StateCollection, err error)
 }

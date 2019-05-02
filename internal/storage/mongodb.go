@@ -133,7 +133,7 @@ func (st *MongoDBStorage) RemoveState(name string) (err error) {
 }
 
 // ListStates returns all state names from TerraDB
-func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll StateCollection, err error) {
+func (st *MongoDBStorage) ListStates(pageNum, pageSize int) (coll StateCollection, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -145,7 +145,7 @@ func (st *MongoDBStorage) ListStates(page_num, page_size int) (coll StateCollect
 			{"timestamp", bson.D{{"$last", "$timestamp"}}},
 		}}},
 	}
-	pl := paginateReq(req, page_num, page_size)
+	pl := paginateReq(req, pageNum, pageSize)
 	cur, err := collection.Aggregate(ctx, pl, options.Aggregate())
 	if err != nil {
 		return coll, fmt.Errorf("failed to list states: %v", err)
@@ -268,7 +268,7 @@ func (st *MongoDBStorage) InsertState(doc State, timestamp, source, name string)
 }
 
 // ListStateSerials returns all state serials with a given name.
-func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int) (coll StateCollection, err error) {
+func (st *MongoDBStorage) ListStateSerials(name string, pageNum, pageSize int) (coll StateCollection, err error) {
 	collection := st.client.Database("terradb").Collection("terraform_states")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -277,7 +277,7 @@ func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int)
 		{{"$sort", bson.D{{"state.serial", 1}}}},
 	}
 
-	pl := paginateReq(req, page_num, page_size)
+	pl := paginateReq(req, pageNum, pageSize)
 	cur, err := collection.Aggregate(ctx, pl, options.Aggregate())
 	if err != nil {
 		return coll, fmt.Errorf("failed to list states: %v", err)
@@ -308,18 +308,18 @@ func (st *MongoDBStorage) ListStateSerials(name string, page_num, page_size int)
 	return
 }
 
-func paginateReq(req mongo.Pipeline, page_num, page_size int) (pl mongo.Pipeline) {
-	skips := page_size * (page_num - 1)
+func paginateReq(req mongo.Pipeline, pageNum, pageSize int) (pl mongo.Pipeline) {
+	skips := pageSize * (pageNum - 1)
 
 	pl = append(req,
 		bson.D{{"$facet", bson.D{
 			{"metadata", bson.A{
 				bson.D{{"$count", "total"}},
-				bson.D{{"$addFields", bson.D{{"page", page_num}}}},
+				bson.D{{"$addFields", bson.D{{"page", pageNum}}}},
 			}},
 			{"docs", bson.A{
 				bson.D{{"$skip", skips}},
-				bson.D{{"$limit", page_size}},
+				bson.D{{"$limit", pageSize}},
 			}},
 		},
 		}},
