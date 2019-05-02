@@ -95,6 +95,7 @@ type LockInfo struct {
 	Path string `json:"path,omitempty"`
 }
 
+// Resource models a Terraform Resource
 type Resource = terraform.ResourceState
 
 // ErrNoDocuments returns an error when no documents were found in the storage
