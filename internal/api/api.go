@@ -39,6 +39,10 @@ func StartServer(cfg *API, st storage.Storage) {
 		password: cfg.Password,
 	}
 
+	if !authenticationRequired(s.username, s.password) {
+		log.Warning("Authentication disabled: empty username or password.")
+	}
+
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.Use(s.handleAPIRequest)
@@ -68,12 +72,16 @@ func StartServer(cfg *API, st storage.Storage) {
 func (s *server) handleAPIRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
-		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-		if !isAuthorized(r.Header.Get("Authorization"), s.username, s.password) {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("401 - Not authorized"))
-			return
+
+		if authenticationRequired(s.username, s.password) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			if !isAuthorized(r.Header.Get("Authorization"), s.username, s.password) {
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("401 - Not authorized"))
+				return
+			}
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -85,11 +93,14 @@ func err500(err error, msg string, w http.ResponseWriter) {
 	return
 }
 
-func isAuthorized(authorizationHeader, username, password string) bool {
+func authenticationRequired(username, password string) bool {
 	if username == "" || password == "" {
-		return true
+		return false
 	}
+	return true
+}
 
+func isAuthorized(authorizationHeader, username, password string) bool {
 	s := strings.SplitN(authorizationHeader, " ", 2)
 	if len(s) != 2 {
 		return false
