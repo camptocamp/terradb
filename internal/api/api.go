@@ -1,8 +1,10 @@
 package api
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -24,6 +26,8 @@ type API struct {
 type server struct {
 	st       storage.Storage
 	pageSize int
+	username string
+	password string
 }
 
 // StartServer starts the API server
@@ -31,11 +35,13 @@ func StartServer(cfg *API, st storage.Storage) {
 	s := server{
 		st:       st,
 		pageSize: cfg.PageSize,
+		username: cfg.Username,
+		password: cfg.Password,
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.Use(handleAPIRequest)
+	router.Use(s.handleAPIRequest)
 
 	apiRtr := router.PathPrefix("/v1").Subrouter()
 	apiRtr.HandleFunc("/states", s.ListStates).Methods("GET")
@@ -59,9 +65,15 @@ func StartServer(cfg *API, st storage.Storage) {
 	return
 }
 
-func handleAPIRequest(next http.Handler) http.Handler {
+func (s *server) handleAPIRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		if !isAuthorized(r.Header.Get("Authorization"), s.username, s.password) {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("401 - Not authorized"))
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -71,4 +83,30 @@ func err500(err error, msg string, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte(fmt.Sprintf("500 - Internal server error: %s", err)))
 	return
+}
+
+func isAuthorized(authorizationHeader, username, password string) bool {
+	if username == "" || password == "" {
+		return true
+	}
+
+	s := strings.SplitN(authorizationHeader, " ", 2)
+	if len(s) != 2 {
+		return false
+	}
+
+	b, err := base64.StdEncoding.DecodeString(s[1])
+	if err != nil {
+		return false
+	}
+
+	pair := strings.SplitN(string(b), ":", 2)
+	if len(pair) != 2 {
+		return false
+	}
+
+	if pair[0] != username || pair[1] != password {
+		return false
+	}
+	return true
 }
