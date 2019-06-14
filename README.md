@@ -32,7 +32,7 @@ acceptance tests on Terraform resources.
 ## Install from code
 
 ```shell
-$ go get github.com/camptocamp/terradb 
+$ go get github.com/camptocamp/terradb
 ```
 
 
@@ -118,9 +118,29 @@ information.
 Returns all serials of a single state by its name. Lock information is not
 provided.
 
+### `/resources/${name}`
 
-
+### `/resources/${module}/${name}`
 
 ## Architecture schema
 
 ![schema](terraDB.svg)
+
+## Planned plugins
+
+### Grafana datasource
+
+With a Grafana datasource we'll be able, among other, to display the plan status
+in a nice dashboard.
+
+### Terraboard
+
+We plan to use TerraDB as a backend for [Terrboard](https://camptocamp.github.io/terraboard/).
+
+### Prometheus Service Discovery
+
+We could use TerraDB as a source for a Service Discovery to populate Prometheus' targets.
+
+### InSpec
+
+We'd like to use TerraDB to make InSpec assertions. For example, verify that all resources of one kind on a cloud account are managed by Terraform.
