@@ -29,6 +29,15 @@ acceptance tests on Terraform resources.
 * A MongoDB (>= 3.4) database
 
 
+## Why MongoDB?
+
+As Terraform states are json documents, we think that a document-oriented
+database makes sense. We'd also like to be able to use a Database-as-a-Service
+so that we don't have to manage it. Thus, MongoDB is one (if not the only)
+obvious choice. However, to avoid blocking this tool adoption because of the bad
+reputation MongoDB may have to some sysadmins, we added an abstraction layer
+that will easily allow to add new storage backends.
+
 ## Install from code
 
 ```shell
