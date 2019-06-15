@@ -127,9 +127,9 @@ information.
 Returns all serials of a single state by its name. Lock information is not
 provided.
 
-### `/resources/${name}`
+### `/resources/${state}/${module}/${name}`
 
-### `/resources/${module}/${name}`
+### `/resources/${state}/${name}`
 
 ## Architecture schema
 
